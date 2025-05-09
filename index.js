@@ -4,8 +4,9 @@ import Fastify from "fastify";
 
 import { connectDB } from "./src/config/connect.js";
 import { buildAdminRouter } from "./src/config/setup.js";
-// import { registerRoutes } from "./src/routes/index.js";
+
 import fastifySocketIO from "fastify-socket.io";
+import { registerRoutes } from "./src/routes/index.js";
 
 const PORT = process.env.PORT || 3000;
 
@@ -25,7 +26,7 @@ const start = async () => {
             transports: ['websocket'],
         });
 
-        // await registerRoutes(app);
+        await registerRoutes(app);
         await buildAdminRouter(app);
 
         await app.listen({ port: PORT, host: '0.0.0.0' });
