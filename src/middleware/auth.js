@@ -1,26 +1,26 @@
-import jwt from 'jsonwebtoken';
-
 export const verifyToken = async (req, reply) => {
     try {
         const authHeader = req.headers['authorization'];
-        
-        // Check if Authorization header exists and starts with 'Bearer'
+
         if (!authHeader || !authHeader.startsWith("Bearer ")) {
-            return reply.status(401).send({ message: "Access token required" });
+            return reply.status(401).send({ message: "Authorization header missing or invalid" });
         }
 
-        // Split the header to extract the token (using one space, not two)
-        const token = authHeader.split(" ")[1]; 
+        const token = authHeader.split(" ")[1];
 
-        // Verify the token using your secret
         const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
 
-        // Attach the decoded user info to the request object
         req.user = decoded;
 
-        // Return true if everything is successful
-        return true;
+        return true; // Successfully verified
     } catch (err) {
-        return reply.status(403).send({ message: "Invalid or expired token" });
+        console.error("Token verification error:", err.message); // Log detailed error
+        if (err.name === "TokenExpiredError") {
+            return reply.status(403).send({ message: "Token expired. Please log in again." });
+        } else if (err.name === "JsonWebTokenError") {
+            return reply.status(403).send({ message: "Invalid token. Access denied." });
+        } else {
+            return reply.status(403).send({ message: "Unauthorized access" });
+        }
     }
 };

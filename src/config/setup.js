@@ -21,10 +21,31 @@ const adminJs = new AdminJS({
     resources: [
         { resource: Admin, options: { listProperties: ['email', 'role', 'isActivated'], filterProperties: ['email', 'role'] } },
         { resource: Customer, options: { listProperties: ['email', 'role', 'isActivated'], filterProperties: ['email', 'role'] } },
-        { resource: Bookings },
+        { 
+            resource: Bookings, 
+            options: { 
+                listProperties: ['customerId', 'totalCost', 'status', 'bookingDate'], 
+                properties: {
+                    customerId: { reference: 'User' },
+                    tickets: { reference: 'Ticket' },
+                },
+            } 
+        },
+        { 
+            resource: Ticket, 
+            options: { 
+                listProperties: ['customerId', 'trainId', 'seatNumber', 'classType', 'price', 'status'], 
+                properties: {
+                    customerId: { reference: 'User' },
+                    trainId: { reference: 'Train' },
+                    scheduleId: { reference: 'Schedule' },
+                },
+            } 
+        },
+        
         { resource: Schedule },
         { resource: Station },
-        { resource: Ticket },
+       
         { resource: Train },
 
       

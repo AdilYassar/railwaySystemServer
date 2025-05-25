@@ -1,20 +1,24 @@
-// filepath: /D:/projects/railwaySystemServer/src/routes/userRoutes.js
+// Filepath: /D:/projects/railwaySystemServer/src/routes/userRoutes.js
 import {
-
   fetchCustomer,
   fetchUser,
   loginAdmin,
-  loginCustomer
+  loginCustomer,
+} from "../controllers/userController.js";
+import { verifyToken } from "../middleware/auth.js";
 
-  } from "../controllers/userController.js";
-  
-  export const userRoutes = async (fastify, options) => {
-    // User routes
+export const userRoutes = async (fastify, options) => {
+  // User routes
 
-    fastify.get("/users/:id", fetchCustomer);
-    fastify.post("/users/login", loginCustomer);
-    fastify.post("/users/login/admin", loginAdmin);
-    fastify.put("/users/:id", fetchUser);
+  // Route for fetching a customer (requires authentication)
+  fastify.get("/users/customer", { preHandler: verifyToken }, fetchCustomer);
 
-  };
-  
+  // Route for logging in a customer
+  fastify.post("/users/login", loginCustomer);
+
+  // Route for logging in an admin
+  fastify.post("/users/login/admin", loginAdmin);
+
+  // Route for fetching a user (admin or customer, requires authentication)
+  fastify.get("/users/me", { preHandler: verifyToken }, fetchUser);
+};

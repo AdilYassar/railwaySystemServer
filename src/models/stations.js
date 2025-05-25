@@ -9,6 +9,7 @@ const stationSchema = new mongoose.Schema({
     state: { type: String },
     coordinates: { type: { lat: Number, lng: Number }, default: null }
   },
+  price: { type: Number,  min: 0 },
   createdAt: { type: Date, default: Date.now },
 });
 

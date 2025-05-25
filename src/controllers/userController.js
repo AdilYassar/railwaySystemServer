@@ -48,32 +48,68 @@ export const loginAdmin = async (req, reply) => {
 };
 
 // Customer Login
+// Customer Login (no bcrypt)
 export const loginCustomer = async (req, reply) => {
   try {
-    const { phone, email } = req.body;
-    let customer = await Customer.findOne({ phone, email });
+    const { phone, email, name, password } = req.body;
+
+    // Validate required fields
+    if (!phone || !email || !name || !password) {
+      return reply.status(400).send({
+        message: "Phone, email, name, and password are all required",
+      });
+    }
+
+    // Find customer by phone or email
+    let customer = await Customer.findOne({
+      $or: [{ email }, { phone }],
+    });
 
     if (!customer) {
+      // Create new customer with posted data (password stored as is)
       customer = new Customer({
         phone,
         email,
+        name,
+        password, // plain text - NOT secure!
         role: "Customer",
         isActivated: true,
       });
+
       await customer.save();
+    } else {
+      // Customer exists, check plain text password match
+      if (customer.password !== password) {
+        return reply.status(401).send({ message: "Invalid credentials" });
+      }
     }
 
+    // Generate JWT tokens
     const { accessToken, refreshToken } = generateTokens(customer);
+
+    // Send response (excluding password)
     return reply.send({
       message: "Customer login successful",
       accessToken,
       refreshToken,
-      customer,
+      customer: {
+        id: customer._id,
+        phone: customer.phone,
+        email: customer.email,
+        name: customer.name,
+        role: customer.role,
+        isActivated: customer.isActivated,
+      },
     });
   } catch (error) {
-    return reply.status(500).send({ message: "An error occurred", error });
+    console.error("Error logging in customer:", error);
+    return reply
+      .status(500)
+      .send({ message: "An error occurred", error: error.message });
   }
 };
+
+
 
 // Refresh Tokens
 export const refreshToken = async (req, reply) => {

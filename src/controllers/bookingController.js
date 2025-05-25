@@ -1,68 +1,101 @@
+import mongoose from "mongoose";
 import { Bookings } from "../models/bookings.js";
-import { Ticket } from "../models/tickets.js";
-import { User } from "../models/user.js"; // Assuming User is a model
+import { Customer } from "../models/user.js";
+import { Station } from "../models/stations.js";
+
+// Helper function to validate MongoDB ObjectId
+const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 
 // Create a new Booking
 export const createBooking = async (req, reply) => {
   try {
-    const { customerId, tickets, totalCost, paymentMethod } = req.body;
+    const { customerId, from, to, paymentMethod, totalCost } = req.body;
 
-    // Validate user
-    const customer = await User.findById(customerId);
+    // Check required fields
+    if (!customerId || !from || !to || !paymentMethod || totalCost === undefined) {
+      return reply.status(400).send({ 
+        message: "Missing required fields: customerId, from, to, paymentMethod, or totalCost" 
+      });
+    }
+
+    // Validate ObjectId formats
+    if (!isValidObjectId(customerId) || !isValidObjectId(from) || !isValidObjectId(to)) {
+      return reply.status(400).send({ message: "Invalid ID format for customerId, from, or to" });
+    }
+
+    // Check that from and to are different
+    if (from === to) {
+      return reply.status(400).send({ message: "From and To stations cannot be the same" });
+    }
+
+    // Validate customer exists
+    const customer = await Customer.findById(customerId);
     if (!customer) {
       return reply.status(404).send({ message: "Customer not found" });
     }
 
-    // Validate tickets
-    const validTickets = await Ticket.find({ _id: { $in: tickets } });
-    if (validTickets.length !== tickets.length) {
-      return reply.status(400).send({ message: "One or more tickets are invalid" });
+    // Validate stations exist
+    const fromStation = await Station.findById(from);
+    const toStation = await Station.findById(to);
+    if (!fromStation || !toStation) {
+      return reply.status(400).send({ message: "Invalid from or to station" });
     }
 
-    // Create a new booking
+    // Create and save booking
     const booking = new Bookings({
       customerId,
-      tickets,
-      totalCost,
+      from: fromStation._id,
+      to: toStation._id,
       paymentMethod,
+      totalCost,
+      status: "Pending",
     });
+
     await booking.save();
 
-    return reply.status(201).send({
-      message: "Booking created successfully",
-      booking,
-    });
+    return reply.status(201).send({ message: "Booking created successfully", booking });
   } catch (error) {
+    console.error(error);
     return reply.status(500).send({ message: "An error occurred", error });
   }
 };
 
-// Fetch all Bookings
+// Fetch all bookings with customer and station info
 export const fetchAllBookings = async (req, reply) => {
   try {
     const bookings = await Bookings.find()
-      .populate("customerId", "name email") // Populate customer details
-      .populate("tickets"); // Populate ticket details
+      .populate("customerId", "name email")
+      .populate("from", "name")
+      .populate("to", "name")
+      .lean();
 
     return reply.send({
       message: "Bookings fetched successfully",
       bookings,
     });
   } catch (error) {
+    console.error(error);
     return reply.status(500).send({ message: "An error occurred", error });
   }
 };
 
-// Fetch Bookings for a specific Customer
+// Fetch bookings by customer with station info
 export const fetchBookingsByCustomer = async (req, reply) => {
   try {
     const { customerId } = req.params;
 
-    const bookings = await Bookings.find({ customerId })
-      .populate("tickets")
-      .populate("customerId", "name email");
+    // Validate ObjectId format
+    if (!isValidObjectId(customerId)) {
+      return reply.status(400).send({ message: "Invalid customerId format" });
+    }
 
-    if (bookings.length === 0) {
+    const bookings = await Bookings.find({ customerId })
+      .populate("customerId", "name email")
+      .populate("from", "name")
+      .populate("to", "name")
+      .lean();
+
+    if (!bookings.length) {
       return reply.status(404).send({ message: "No bookings found for this customer" });
     }
 
@@ -71,15 +104,20 @@ export const fetchBookingsByCustomer = async (req, reply) => {
       bookings,
     });
   } catch (error) {
+    console.error(error);
     return reply.status(500).send({ message: "An error occurred", error });
   }
 };
 
-// Update Booking Status
+// Update booking status
 export const updateBookingStatus = async (req, reply) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
+
+    if (!isValidObjectId(id)) {
+      return reply.status(400).send({ message: "Invalid booking ID" });
+    }
 
     if (!["Pending", "Confirmed", "Cancelled"].includes(status)) {
       return reply.status(400).send({ message: "Invalid status value" });
@@ -98,26 +136,32 @@ export const updateBookingStatus = async (req, reply) => {
       booking,
     });
   } catch (error) {
+    console.error(error);
     return reply.status(500).send({ message: "An error occurred", error });
   }
 };
 
-// Delete a Booking
+// Delete a booking
 export const deleteBooking = async (req, reply) => {
   try {
     const { id } = req.params;
+
+    if (!isValidObjectId(id)) {
+      return reply.status(400).send({ message: "Invalid booking ID" });
+    }
 
     const booking = await Bookings.findById(id);
     if (!booking) {
       return reply.status(404).send({ message: "Booking not found" });
     }
 
-    await booking.remove();
+    await Bookings.deleteOne({ _id: id });
 
     return reply.send({
       message: "Booking deleted successfully",
     });
   } catch (error) {
+    console.error(error);
     return reply.status(500).send({ message: "An error occurred", error });
   }
 };
