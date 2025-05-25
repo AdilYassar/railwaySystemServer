@@ -1,4 +1,5 @@
 import {bookingRoutes} from "./bookingRoutes.js";
+import {feedbackRoutes} from "./feedbackRoutes.js";
 import {scheduleRoutes} from "./scheduleRoutes.js";
 import {stationRoutes} from "./stationRoutes.js";
 import {ticketRoutes} from "./ticketRoutes.js";
@@ -15,5 +16,6 @@ export const registerRoutes = async (fastify) => {
     fastify.register(ticketRoutes, { prefix: prefix });
     fastify.register(trainRoutes, { prefix: prefix });
     fastify.register(userRoutes, { prefix: prefix });
+        fastify.register(feedbackRoutes, { prefix: prefix });
 
 };

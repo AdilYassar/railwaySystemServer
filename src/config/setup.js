@@ -10,6 +10,7 @@ import { Schedule } from '../models/schedules.js';
 import { Station } from '../models/stations.js';
 import { Ticket } from '../models/tickets.js';
 import { Train } from '../models/trains.js';
+import { Feedback } from '../models/feedback.js';
 
 
 
@@ -21,16 +22,7 @@ const adminJs = new AdminJS({
     resources: [
         { resource: Admin, options: { listProperties: ['email', 'role', 'isActivated'], filterProperties: ['email', 'role'] } },
         { resource: Customer, options: { listProperties: ['email', 'role', 'isActivated'], filterProperties: ['email', 'role'] } },
-        { 
-            resource: Bookings, 
-            options: { 
-                listProperties: ['customerId', 'totalCost', 'status', 'bookingDate'], 
-                properties: {
-                    customerId: { reference: 'User' },
-                    tickets: { reference: 'Ticket' },
-                },
-            } 
-        },
+
         { 
             resource: Ticket, 
             options: { 
@@ -42,9 +34,10 @@ const adminJs = new AdminJS({
                 },
             } 
         },
-        
+        { resource: Bookings,},
         { resource: Schedule },
         { resource: Station },
+        { resource: Feedback },
        
         { resource: Train },
 
